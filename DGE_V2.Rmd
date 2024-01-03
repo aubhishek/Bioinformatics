@@ -1,0 +1,161 @@
+---
+title: "DGE"
+author: "AZ"
+date: "12/26/2023"
+output: html_document
+---
+
+```{r}
+library(DESeq2)
+library(ggplot2)
+```
+
+```{r}
+Counts <- read.delim('HCC364_timecourse.csv', header = TRUE, sep = ',')
+
+```
+
+```{r}
+Counts
+```
+```{r}
+colnames(Counts)[1] <- "Gene_name"
+Counts
+```
+```{r}
+#Duplicate rownames are converted
+rownames(Counts) <- make.names(Counts$Gene_name, unique = TRUE)
+```
+
+```{r}
+Counts
+```
+
+```{r}
+# Drop the first column
+Counts <- Counts[, -1]
+Counts
+```
+
+```{r}
+Counts <- Counts[rowSums(Counts) > 50, ]
+```
+
+
+```{r}
+print (dim(Counts))
+```
+```{r}
+condition <- factor(c('C','C', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S' ))
+```
+
+```{r}
+colData <- data.frame(row.names = colnames(Counts), condition)
+```
+
+
+```{r}
+colData
+```
+```{r}
+Counts <- round(Counts)
+```
+
+```{r}
+na_values <- is.na(Counts)
+print(head(na_values, 30))
+
+```
+```{r}
+na_count_per_column <- colSums(na_values)
+print(na_count_per_column)
+```
+
+
+```{r}
+dds = DESeqDataSetFromMatrix(countData = Counts, colData = colData, design = ~condition)
+```
+```{r}
+dds
+```
+
+```{r}
+dds <- DESeq(dds)
+```
+
+```{r}
+dds
+```
+
+```{r}
+vsdata <- vst(dds, blind = FALSE)
+```
+
+```{r}
+dds
+```
+
+```{r}
+# Access the results
+result_table <- results(dds)
+
+# Print the results table
+print(result_table)
+```
+
+```{r}
+# Assuming 'results_table' is your DESeq2 results table
+results_table <- results(dds)
+
+# Create a volcano plot using base R
+plot(results_table$log2FoldChange, -log10(results_table$padj), 
+     pch = 20, col = ifelse(results_table$padj < 0.05, "red", "black"),
+     xlab = "log2 Fold Change", ylab = "-log10(Adjusted p-value)",
+     main = "Volcano Plot")
+
+```
+
+```{r}
+
+# Convert DESeq2 results table to a data frame
+results_df <- as.data.frame(results_table)
+
+# Create a volcano plot using ggplot2
+ggplot(results_df, aes(x = log2FoldChange, y = -log10(padj), color = factor(padj < 0.05))) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("black", "red")) +
+  labs(x = "log2 Fold Change", y = "-log10(Adjusted p-value)", title = "Volcano Plot")
+labs(x = "log2 Fold Change", y = "-log10(Adjusted p-value)", title = "Volcano Plot")
+
+```
+
+```{r}
+res <- results(dds, contrast = c('condition', 'S', 'C'))
+```
+
+```{r}
+res
+
+```
+
+
+```{r}
+sigs <- na.omit (res)
+```
+
+```{r}
+sigs
+```
+
+
+```{r}
+sigs <- sigs[sigs$padj<0.05,]
+sigs
+```
+
+
+
+
+
+
+
